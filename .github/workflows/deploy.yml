@@ -1,0 +1,34 @@
+name: Deploy to GCP Cloud Storage
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/490933743286/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "github-deploy@project-395c3d26-a536-4afa-9b1.iam.gserviceaccount.com"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Storage
+        run: |
+          gsutil cp chronos.html gs://tessera-temporum/index.html
+          gsutil setmeta -h "Cache-Control:no-cache, max-age=0" gs://tessera-temporum/index.html
+          gsutil acl ch -u AllUsers:R gs://tessera-temporum/index.html
+          echo "Deployed!"
