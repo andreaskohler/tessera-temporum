@@ -2062,7 +2062,12 @@ function renderNetwork() {
       ctx.fillStyle='#e8e4d9';
       ctx.font=`${isSel||isHov?'bold ':''} ${Math.max(9,n.r*0.7)}px Georgia`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(n.name.split(' ')[0], n.x, n.y+n.r+10);
+      // Show full name, abbreviate middle names if too long
+      const nameParts = n.name.split(' ');
+      const label = n.name.length > 18
+        ? nameParts[0] + ' ' + nameParts[nameParts.length-1]
+        : n.name;
+      ctx.fillText(label, n.x, n.y+n.r+10);
       ctx.globalAlpha=1;
     });
     ctx.restore();
