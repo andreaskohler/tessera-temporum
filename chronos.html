@@ -826,6 +826,88 @@ const PARTY_COLORS = {
 // Wikipedia title lookup — verified titles for disambiguation/variant names
 const WIKI_TITLES = {"William I (the Conqueror)": "William_the_Conqueror", "William II (Rufus)": "William_II_of_England", "Henry I": "Henry_I_of_England", "Henry II": "Henry_II_of_England", "Henry III": "Henry_III_of_England", "Henry IV": "Henry_IV_of_England", "Henry V": "Henry_V_of_England", "Henry VI": "Henry_VI_of_England", "Henry VII": "Henry_VII_of_England", "Henry VIII": "Henry_VIII", "Edward I": "Edward_I_of_England", "Edward II": "Edward_II_of_England", "Edward III": "Edward_III_of_England", "Edward IV": "Edward_IV_of_England", "Edward V": "Edward_V_of_England", "Edward VI": "Edward_VI_of_England", "Edward VII": "Edward_VII", "Edward VIII": "Edward_VIII", "Richard I (the Lionheart)": "Richard_I_of_England", "Richard II": "Richard_II_of_England", "Richard III": "Richard_III_of_England", "George I": "George_I_of_Great_Britain", "George II": "George_II_of_Great_Britain", "George III": "George_III", "George IV": "George_IV", "George V": "George_V", "George VI": "George_VI", "Charles I": "Charles_I_of_England", "Charles II": "Charles_II_of_England", "Charles III": "Charles_III", "James I": "James_I_of_England", "James II": "James_II_of_England", "Mary I": "Mary_I_of_England", "Mary II": "Mary_II_of_England", "William III": "William_III_of_England", "Stephen": "Stephen,_King_of_England", "John": "John,_King_of_England", "Anne": "Anne,_Queen_of_Great_Britain", "Victoria": "Queen_Victoria", "Elizabeth II": "Elizabeth_II", "Edgar the Peaceful": "Edgar,_King_of_England", "Æthelred the Unready": "%C3%86thelred_the_Unready", "Harold Godwinson": "Harold_Godwinson", "Ivan III (the Great)": "Ivan_III_of_Russia", "Ivan IV (the Terrible)": "Ivan_the_Terrible", "Peter I (the Great)": "Peter_the_Great", "Catherine II (the Great)": "Catherine_the_Great", "Catherine I": "Catherine_I_of_Russia", "Elizabeth of Russia": "Elizabeth_of_Russia", "Paul I": "Paul_I_of_Russia", "Alexander I": "Alexander_I_of_Russia", "Alexander II": "Alexander_II_of_Russia", "Alexander III": "Alexander_III_of_Russia", "Nicholas I": "Nicholas_I_of_Russia", "Nicholas II": "Nicholas_II_of_Russia", "Qin Shi Huang": "Qin_Shi_Huang", "Liu Bang (Emperor Gaozu)": "Emperor_Gaozu_of_Han", "Emperor Wu of Han": "Emperor_Wu_of_Han", "Emperor Taizong of Tang": "Emperor_Taizong_of_Tang", "Emperor Xuanzong of Tang": "Emperor_Xuanzong_of_Tang", "Zhu Yuanzhang (Hongwu Emperor)": "Hongwu_Emperor", "Yongle Emperor": "Yongle_Emperor", "Kangxi Emperor": "Kangxi_Emperor", "Qianlong Emperor": "Qianlong_Emperor", "Empress Dowager Cixi": "Empress_Dowager_Cixi", "Hua Guofeng": "Hua_Guofeng", "Zeno of Citium": "Zeno_of_Citium", "Pliny the Elder": "Pliny_the_Elder", "Marcus Aurelius": "Marcus_Aurelius", "George H.W. Bush": "George_H._W._Bush", "George W. Bush": "George_W._Bush", "Franklin D. Roosevelt": "Franklin_D._Roosevelt", "Lyndon B. Johnson": "Lyndon_B._Johnson", "Dwight D. Eisenhower": "Dwight_D._Eisenhower", "William Henry Harrison": "William_Henry_Harrison", "William Howard Taft": "William_Howard_Taft", "William McKinley": "William_McKinley", "James K. Polk": "James_K._Polk", "James A. Garfield": "James_A._Garfield", "Rutherford B. Hayes": "Rutherford_B._Hayes", "Chester A. Arthur": "Chester_A._Arthur", "Warren G. Harding": "Warren_G._Harding", "John Quincy Adams": "John_Quincy_Adams", "Martin Van Buren": "Martin_Van_Buren", "Millard Fillmore": "Millard_Fillmore", "Franklin Pierce": "Franklin_Pierce", "Andrew Johnson": "Andrew_Johnson", "Ulysses S. Grant": "Ulysses_S._Grant", "Zachary Taylor": "Zachary_Taylor", "James Monroe": "James_Monroe", "James Madison": "James_Madison", "Herbert Hoover": "Herbert_Hoover", "Calvin Coolidge": "Calvin_Coolidge", "Harry S. Truman": "Harry_S._Truman", "John F. Kennedy": "John_F._Kennedy", "Jimmy Carter": "Jimmy_Carter", "Gerald Ford": "Gerald_Ford", "Donald Trump": "Donald_Trump", "Joe Biden": "Joe_Biden", "Barack Obama": "Barack_Obama", "Bill Clinton": "Bill_Clinton", "Ronald Reagan": "Ronald_Reagan", "Richard Nixon": "Richard_Nixon"};
 
+// Uncertainty: how many years of margin for ancient figures
+const EPOCH_DESCRIPTIONS = {
+  "Classical Antiquity": "The era of ancient Greece and Rome. Philosophy, democracy, empire. From the rise of Greek city-states to the fall of Rome in 476 AD.",
+  "Middle Ages": "Medieval Europe: feudalism, the Catholic Church, the Crusades, the Black Death, and the emergence of nation-states.",
+  "Renaissance": "Rebirth of classical learning and art in Europe. Leonardo, Michelangelo, Raphael. The printing press. Humanism.",
+  "Enlightenment": "The Age of Reason. Science, philosophy, and political thought transformed Europe. Voltaire, Locke, Newton, Kant.",
+  "Modern": "Industrialization, nationalism, colonialism, two World Wars. The age that built the contemporary world.",
+  "Contemporary": "The post-WWII world: Cold War, decolonization, digital revolution, globalization.",
+  "Pre-History": "Before written records. The dawn of human civilization, agriculture, and the first cities.",
+  "Shang": "China's first historically documented dynasty. Bronze casting, oracle bones, the earliest Chinese writing.",
+  "Zhou": "The longest dynasty in Chinese history. The age of Confucius, Laozi, Sun Tzu. The Hundred Schools of Thought.",
+  "Qin & Han": "Qin Shi Huang unified China. The Han Dynasty opened the Silk Road and established Confucianism as state philosophy.",
+  "3 Kingdoms": "China fragmented into Wei, Shu and Wu after the Han collapse. Romanticized in Romance of the Three Kingdoms.",
+  "Jin": "Brief reunification of China after the Three Kingdoms, followed by northern invasions.",
+  "N&S Dynasties": "China divided between northern and southern courts. Buddhism flourished across the land.",
+  "Sui": "Short-lived dynasty that reunified China and built the Grand Canal.",
+  "Tang": "The golden age of Chinese civilization: cosmopolitan, prosperous, artistically brilliant. The Silk Road at its height.",
+  "Song": "Technological innovation: printing, gunpowder, the compass. The age of Neo-Confucianism.",
+  "Yuan (Mongol)": "Kublai Khan's Mongol dynasty ruled China. Marco Polo visited. The largest land empire in history.",
+  "Ming": "Restoration of Han Chinese rule. Built the Great Wall as we know it. Zheng He's voyages. The Forbidden City.",
+  "Qing": "The last imperial dynasty. Manchu rulers. China's greatest territorial extent. Decline under Western pressure.",
+  "Republic / PRC": "Sun Yat-sen's revolution, the Republic of China, WWII, Civil War, and Mao's People's Republic.",
+  "Pre-Islamic": "Arabia before Muhammad: tribal society, trade routes, polytheistic religion.",
+  "Rashidun": "The first four caliphs after Muhammad. The fastest territorial expansion in history.",
+  "Umayyad": "The first great Islamic caliphate, centered in Damascus. Expanded from Spain to Central Asia.",
+  "Abbasid": "The golden age of Islam. Baghdad as the world's intellectual capital. Algebra, astronomy, medicine.",
+  "Fragmentation": "The Abbasid caliphate weakened. Mongol invasion destroyed Baghdad in 1258. Regional sultanates emerged.",
+  "Ottoman": "The last great Islamic empire. Constantinople captured 1453. At its peak controlled three continents.",
+  "Vedic": "The age of the Vedas: early Hinduism, the caste system, Sanskrit literature.",
+  "Maurya": "Ashoka's empire unified most of India. Buddhism spread across Asia.",
+  "Classical": "The Gupta Empire: mathematics (zero, decimal system), astronomy, Sanskrit literature's golden age.",
+  "Medieval": "Regional kingdoms, the Chola Empire, Islamic invasions, the Delhi Sultanate.",
+  "Mughal": "The Mughal Empire under Akbar and Aurangzeb. The Taj Mahal. Religious synthesis across faiths.",
+  "Colonial": "The British East India Company and then the British Raj. Transformation of the subcontinent.",
+  "Rashidun Caliphate": "The first four caliphs: Abu Bakr, Umar, Uthman, Ali. Rapid expansion across Arabia, Persia and Egypt.",
+  "Yayoi": "Early Japanese civilization: rice cultivation, bronze and iron tools introduced from the continent.",
+  "Kofun": "The era of large burial mounds. The foundations of the Japanese imperial system.",
+  "Nara": "Japan's first permanent capital. Buddhism became the state religion. Chinese cultural influence at its peak.",
+  "Heian": "The peak of classical Japanese culture. The Tale of Genji. Court aristocracy and aesthetics.",
+  "Kamakura": "Japan's first shogunate. The samurai class rose to power. Zen Buddhism flourished.",
+  "Muromachi": "Ashikaga shoguns. The Warring States period. No theater, ink painting, the tea ceremony.",
+  "Edo": "250 years of peace under the Tokugawa shogunate. Japan isolated from the world. Kabuki, ukiyo-e.",
+  "Meiji": "Japan opened to the West and modernized with extraordinary speed. From feudalism to industrial power in 30 years.",
+  "Late Roman": "The declining Western Roman Empire and the strengthening Eastern Roman Empire.",
+  "Early Byzantine": "The Eastern Roman Empire consolidated after Rome fell. Justinian's reconquest. Hagia Sophia built.",
+  "Middle Byzantine": "Byzantium at its cultural height. Greek Orthodox Christianity defined. Conflict with Islam.",
+  "Late Byzantine": "The Crusaders sacked Constantinople in 1204. The empire never recovered.",
+  "Post-Byzantine": "The Ottoman Empire absorbed Byzantine lands. Greek scholars fled to Italy, sparking the Renaissance.",
+  "Sumerian": "The world's first civilization: writing, cities, law, mathematics. Ur, Uruk, Lagash.",
+  "Akkadian": "The world's first empire under Sargon of Akkad. Semitic language replaced Sumerian.",
+  "Babylonian": "Hammurabi's law code. The hanging gardens. Astronomy and mathematics advanced.",
+  "Assyrian": "The most feared military power of the ancient world. Libraries at Nineveh.",
+  "Achaemenid": "Cyrus the Great's Persian Empire: the largest the world had seen. Tolerant, multicultural governance.",
+  "Hellenistic": "Alexander's conquests spread Greek culture from Egypt to India. Great Library of Alexandria.",
+  "Sassanid": "The last great Persian empire before Islam. Rival to Rome and Byzantium for centuries.",
+  "Islamic": "The Islamic caliphate transformed Mesopotamia into a center of learning and trade.",
+  "Old Kingdom": "The age of the great pyramids. The pharaoh as living god. A civilization of extraordinary stability.",
+  "Middle Kingdom": "Egypt reunified after chaos. Literature, art, and trade flourished.",
+  "New Kingdom": "Egypt's imperial age: Ramesses II, Tutankhamun, Abu Simbel. The height of pharaonic power.",
+  "Late Period": "Egypt under Libyan, Nubian, Assyrian and Persian domination.",
+  "Ptolemaic": "Greek rulers of Egypt after Alexander. Cleopatra VII. The Library of Alexandria.",
+  "Roman / Byzantine": "Egypt as a Roman province, then Byzantine. Christianity replaced the old religion.",
+  "Ancient Kingdoms": "The early kingdoms of sub-Saharan Africa: Kush, Axum, the Ghana Empire.",
+  "Medieval Kingdoms": "The Mali and Songhai empires. Mansa Musa. Timbuktu as a center of learning.",
+  "Colonialism": "European powers carved up Africa. The slave trade. The end of traditional governance.",
+  "Independence": "African nations won independence in the 1950s-70s. The postcolonial era.",
+  "Olmec": "The mother culture of Mesoamerica. Colossal stone heads. Writing, calendars, ball courts.",
+  "Classic Maya": "The height of Maya civilization. Towering pyramids, advanced astronomy, hieroglyphic writing.",
+  "Post-Classic": "The Toltec and Aztec empires rose after the Maya decline.",
+  "Colonial": "Spanish conquest destroyed indigenous empires. New Spain built on the ruins.",
+  "Yayoi": "Early Japan: rice cultivation, bronze and iron, the foundations of Japanese culture."
+};
+
+function dateUncertainty(year) {
+  const abs = Math.abs(year);
+  if (abs > 2000) return 200;  // ancient: ±200 years
+  if (abs > 1000) return 100;  // classical: ±100 years
+  if (abs > 500)  return 50;   // medieval: ±50 years
+  if (abs > 200)  return 20;   // early modern: ±20 years
+  return 0;                     // modern: precise
+}
+
 function wikiURL(name) {
   const title = WIKI_TITLES[name] || name.replace(/ /g,'_');
   return 'https://en.wikipedia.org/wiki/' + title;
@@ -1161,8 +1243,9 @@ function renderFilterBar() {
 function render() {
   if (S.activeTab !== "timeline") return;
   const persons = filtered();
-  const mn = persons.length ? Math.min(...persons.map(p=>p.birth)) - 30 : -600;
-  const mx = persons.length ? Math.max(...persons.map(p=>p.death)) + 30 : 2000;
+  const mn = persons.length ? Math.min(...persons.map(p=>p.birth)) - Math.max(10, Math.abs(Math.min(...persons.map(p=>p.birth)))*0.01) : -600;
+  const rawMx = persons.length ? Math.max(...persons.map(p=>Math.min(p.death, CURRENT_YEAR))) : 2000;
+  const mx = rawMx + Math.max(10, rawMx * 0.005);
 
   document.getElementById('stat-persons').textContent = PERSONS.length;
   document.getElementById('stat-visible').textContent = persons.length;
@@ -1227,8 +1310,10 @@ function render() {
       const cl = Math.max(0,l), cw = Math.min(100,l+w)-cl;
       const seg = document.createElement('div');
       seg.style.cssText = `position:absolute;left:${cl}%;width:${cw}%;top:0;bottom:0;background:${ep.color};opacity:.28;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;border-right:1px solid ${ep.color}88;`;
-      seg.title = ep.name;
-    seg.style.cursor = 'help';
+      seg.style.cursor = 'help';
+    seg.addEventListener('mouseenter', ev => showEpochTooltip(ep, row, ev));
+    seg.addEventListener('mousemove',  ev => moveEpochTooltip(ev));
+    seg.addEventListener('mouseleave', () => { epochTTTimer = setTimeout(hideEpochTooltip, 300); });
       const lbl = document.createElement('span');
       const estPx = cw * 8;
       const txt = estPx > 100 ? ep.name : estPx > 45 ? ep.name.split(' ')[0] : estPx > 22 ? ep.name.substring(0,3).toUpperCase() : '';
@@ -1320,12 +1405,20 @@ function render() {
         ba.appendChild(b);
       });
       const bar = document.createElement('div'); bar.className='person-bar';
-      bar.style.background = TX[p.fields[0]]?.color || '#7a7a8e';
-      bar.style.left = pct(p.birth,mn,mx)+'%';
+      const fieldColor = TX[p.fields[0]]?.color || '#7a7a8e';
+      bar.style.background = fieldColor;
       const deathCapped = Math.min(p.death, CURRENT_YEAR);
       const isLiving = p.death > CURRENT_YEAR;
+      // Uncertainty indicators for ancient figures
+      const birthUnc = dateUncertainty(p.birth);
+      const deathUnc = dateUncertainty(p.death);
+      const isUncertain = (p.uncertain || birthUnc > 50);
+      if (isUncertain) bar.style.opacity = '0.75';
+      bar.style.left = pct(p.birth,mn,mx)+'%';
       bar.style.width = Math.max(0.5, pct(deathCapped,mn,mx)-pct(p.birth,mn,mx))+'%';
       if (isLiving) bar.style.borderRight = '2px dashed rgba(255,255,255,.4)';
+      if (birthUnc > 50) bar.style.borderLeft = '2px dashed rgba(255,255,255,.35)';
+      if (deathUnc > 50 && !isLiving) bar.style.borderRight = '2px dashed rgba(255,255,255,.35)';
       ba.appendChild(bar);
 
       // Collect terms — explicit or parsed from orgs
@@ -1474,6 +1567,7 @@ function showPopover(p, anchorEl) {
       <h4>Contemporaries</h4>
       ${contemps.map(q=>`<div class="pop-rel">${q.name}<span>${fy(q.birth)}–${fy(q.death)}</span></div>`).join('')}
     </div>` : ''}
+    ${(dateUncertainty(p.birth) > 50) ? `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#c9a96e;margin-top:6px;padding:4px 6px;border:1px solid #c9a96e44;border-radius:3px">⚠ Dates approximate — uncertainty ±${dateUncertainty(p.birth)} years</div>` : ''}
     <div class="pop-bio">${p.bio}</div>
     <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:7px">
       <a href="${wikiURL(p.name)}"
@@ -2261,6 +2355,49 @@ function download(filename, mime, content) {
   a.href = URL.createObjectURL(new Blob([content],{type:mime}));
   a.download = filename;
   a.click();
+}
+
+
+// ── EPOCH TOOLTIP ────────────────────────────────────────────────
+let epochTT = null, epochTTTimer = null;
+function ensureEpochTT() {
+  if (!epochTT) {
+    epochTT = document.createElement('div');
+    epochTT.style.cssText = 'position:fixed;background:#16161e;border:1px solid #3a3a4e;border-radius:5px;padding:12px 14px;pointer-events:auto;opacity:0;transition:opacity .1s;z-index:1000;max-width:280px;';
+    epochTT.addEventListener('mouseenter', () => clearTimeout(epochTTTimer));
+    epochTT.addEventListener('mouseleave', () => { epochTTTimer = setTimeout(hideEpochTooltip, 150); });
+    document.body.appendChild(epochTT);
+  }
+  return epochTT;
+}
+function showEpochTooltip(ep, row, e) {
+  clearTimeout(epochTTTimer);
+  const tt = ensureEpochTT();
+  const desc = EPOCH_DESCRIPTIONS[ep.name] || '';
+  const startStr = ep.start < 0 ? Math.abs(ep.start)+' BC' : ep.start+' AD';
+  const endStr   = ep.end > 2025 ? 'present' : (ep.end < 0 ? Math.abs(ep.end)+' BC' : ep.end+' AD');
+  tt.innerHTML = `
+    <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:${ep.color};margin-bottom:4px">${row.label}</div>
+    <div style="font-family:'Georgia',serif;font-size:14px;color:#e8e4d9;margin-bottom:3px">${ep.name}</div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#c9a96e;margin-bottom:8px">${startStr} – ${endStr}</div>
+    ${desc ? `<div style="font-size:12px;color:#9a9ab0;line-height:1.5;margin-bottom:8px">${desc}</div>` : ''}
+    <a href="${wikiURL(ep.name)}" target="_blank" rel="noopener"
+       style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#c9a96e;text-decoration:none;opacity:.85;display:inline-flex;align-items:center;gap:4px"
+       onmouseenter="this.style.opacity=1" onmouseleave="this.style.opacity=.85">&#x2197; Wikipedia</a>
+  `;
+  moveEpochTooltip(e);
+  tt.style.opacity = '1';
+}
+function moveEpochTooltip(e) {
+  const tt = ensureEpochTT();
+  const vw=window.innerWidth, vh=window.innerHeight;
+  let x=e.clientX+12, y=e.clientY+12;
+  if (x+300>vw) x=e.clientX-310;
+  if (y+200>vh) y=e.clientY-210;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+}
+function hideEpochTooltip() {
+  if (epochTT) epochTT.style.opacity='0';
 }
 
 
