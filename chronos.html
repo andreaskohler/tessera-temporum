@@ -161,9 +161,9 @@
       <div style="display:flex;align-items:center;justify-content:space-between;">
         <div style="display:flex;align-items:center;flex:1;gap:0">
           <div class="view-tabs">
-            <div class="tab active">Timeline</div>
-            <div class="tab" style="opacity:.4;cursor:default">Network</div>
-            <div class="tab" style="opacity:.4;cursor:default">Table</div>
+            <div class="tab active" id="tab-timeline" onclick="switchTab('timeline')">Timeline</div>
+            <div class="tab" id="tab-network" onclick="switchTab('network')">Network</div>
+            <div class="tab" id="tab-table" onclick="switchTab('table')">Table</div>
           </div>
           <div style="display:flex;align-items:center;gap:4px;margin-left:12px;border-left:1px solid var(--border);padding-left:12px">
             <div class="tab" id="tab-view-toggle" onclick="toggleViewMode()" title="Toggle lifetime vs office bars">Office View</div>
@@ -188,6 +188,8 @@
     </div>
     <div class="af-bar" id="af-bar"></div>
     <div class="timeline-area" id="timeline-area"></div>
+    <div class="timeline-area" id="network-area" style="display:none;position:relative;overflow:hidden;"></div>
+    <div class="timeline-area" id="table-area" style="display:none;overflow:auto;padding:16px;"></div>
   </div>
   <div id="popover" class="popover"></div>
   <div class="detail-panel" id="detail-panel">
@@ -849,6 +851,7 @@ let S = {
   selRoles:       new Set(),
   viewMode:       'lifetime',  // 'lifetime' or 'office'
   sortMode:       'birth',     // 'birth' or 'office'
+  activeTab:      'timeline',
   toolbarRoles:   new Set(),   // roles selected in toolbar dropdown
   roleDropOpen:   false,
   selEpochRows:   new Set(),  // purely manual — nothing auto-shown
@@ -924,7 +927,7 @@ function countWith(extraField, extraSchool, extraRegion, extraSub, extraEpoch, e
   }).length;
 }
 
-function fy(y) { return y < 0 ? `${Math.abs(y)} BC` : `${y} AD`; }
+function fy(y) { return y < 0 ? `${Math.abs(y)} BC` : y >= CURRENT_YEAR ? 'present' : `${y} AD`; }
 function pct(y, mn, mx) { return ((y - mn) / (mx - mn)) * 100; }
 
 // ═══════════════════════════════════════════════════════
@@ -1156,6 +1159,7 @@ function renderFilterBar() {
 // TIMELINE RENDER
 // ═══════════════════════════════════════════════════════
 function render() {
+  if (S.activeTab !== "timeline") return;
   const persons = filtered();
   const mn = persons.length ? Math.min(...persons.map(p=>p.birth)) - 30 : -600;
   const mx = persons.length ? Math.max(...persons.map(p=>p.death)) + 30 : 2000;
@@ -1163,7 +1167,7 @@ function render() {
   document.getElementById('stat-persons').textContent = PERSONS.length;
   document.getElementById('stat-visible').textContent = persons.length;
   document.getElementById('stat-span').textContent = persons.length
-    ? `${fy(Math.min(...persons.map(p=>p.birth)))} – ${fy(Math.max(...persons.map(p=>p.death)))}`
+    ? `${fy(Math.min(...persons.map(p=>p.birth)))} – ${fy(Math.min(Math.max(...persons.map(p=>p.death)), CURRENT_YEAR))}`
     : '—';
 
   renderFilterBar();
@@ -1411,7 +1415,7 @@ function selectPerson(p) {
   S.selected = p.id; render();
   document.getElementById('detail-panel').classList.add('open');
   document.getElementById('d-name').textContent = p.name;
-  document.getElementById('d-dates').textContent = `${fy(p.birth)} – ${fy(p.death)}`;
+  document.getElementById('d-dates').textContent = `${fy(p.birth)} – ${fy(p.death)}${p.death >= CURRENT_YEAR ? ' (living)' : ''}`;
   document.getElementById('d-fields').innerHTML  = p.fields.map(f=>`<div class="detail-chip" style="border-color:${TX[f]?.color||'#444'};color:${TX[f]?.color||'#aaa'}">${f}</div>`).join('');
   document.getElementById('d-schools').innerHTML = p.schools.map(s=>`<div class="detail-chip" style="font-size:11px;opacity:.8">${s}</div>`).join('');
   document.getElementById('d-regions').innerHTML = `<div class="detail-chip">${p.region}</div>${p.party?`<div class="detail-chip" style="border-color:${PARTY_COLORS[p.party]||'#444'};color:${PARTY_COLORS[p.party]||'#aaa'}">${p.party}</div>`:''}${p.dynasty ? `<div class="detail-chip" style="border-color:${TD[p.dynasty]?.color||'#444'};color:${TD[p.dynasty]?.color||'#aaa'}">${p.dynasty}</div>` : ''}`;
@@ -1872,7 +1876,390 @@ function toggleViewMode() {
 }
 
 
-function refresh() { buildTree(); render(); }
+// ── TAB SWITCHING ────────────────────────────────────────────────
+function switchTab(tab) {
+  S.activeTab = tab;
+  ['timeline','network','table'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    document.getElementById(t+'-area').style.display = t===tab ? '' : 'none';
+  });
+  // show/hide toolbar controls
+  const toolbarControls = document.querySelector('.view-tabs').parentElement.querySelector('div[style*="border-left"]');
+  const zoomBar = document.querySelector('.zoom-bar');
+  if (toolbarControls) toolbarControls.style.display = tab==='timeline' ? 'flex' : 'none';
+  if (zoomBar) zoomBar.style.display = tab==='timeline' ? 'flex' : 'none';
+  if (tab==='timeline') render();
+  else if (tab==='network') renderNetwork();
+  else if (tab==='table') renderTable();
+}
+
+// ── NETWORK VIEW ─────────────────────────────────────────────────
+const EDGE_COLORS = {taught:"#c9a96e",influenced:"#7eb8c9",contemporary:"#a8c97e",opposed:"#c97e7e"};
+const EDGE_ALPHA  = {taught:.9,influenced:.6,contemporary:.25,opposed:.8};
+
+// Relationship data — key figures
+const RELATIONS = [
+  // Philosophy chain
+  {a:1,b:2,type:"taught",label:"taught"},          // Socrates → Plato
+  {a:2,b:3,type:"taught",label:"taught"},          // Plato → Aristotle
+  {a:1,b:3,type:"influenced",label:"influenced"},  // Socrates → Aristotle
+  {a:3,b:10,type:"influenced",label:"influenced"}, // Aristotle → Aquinas
+  {a:3,b:404,type:"influenced",label:"influenced"},// Aristotle → Averroes
+  {a:404,b:10,type:"influenced",label:"influenced"},// Averroes → Aquinas
+  {a:2,b:406,type:"influenced",label:"influenced"},// Plato → Maimonides
+  {a:390,b:2,type:"influenced",label:"influenced"},// Thales → Plato (via pre-socratics)
+  {a:391,b:2,type:"influenced",label:"influenced"},// Pythagoras → Plato
+  // Stoics
+  {a:5,b:6,type:"influenced",label:"influenced"},  // Zeno → Cicero
+  {a:5,b:7,type:"influenced",label:"influenced"},  // Zeno → Marcus Aurelius
+  {a:5,b:8,type:"influenced",label:"influenced"},  // Zeno → Epictetus
+  {a:8,b:7,type:"taught",label:"taught"},          // Epictetus → Marcus Aurelius
+  {a:393,b:7,type:"contemporary",label:"contemporary"}, // Seneca & Marcus Aurelius
+  // Enlightenment chain
+  {a:395,b:12,type:"influenced",label:"influenced"},// Bacon → Descartes
+  {a:12,b:396,type:"influenced",label:"influenced"},// Descartes → Leibniz
+  {a:12,b:13,type:"influenced",label:"influenced"}, // Descartes → Spinoza
+  {a:14,b:17,type:"influenced",label:"influenced"}, // Locke → Hume
+  {a:14,b:16,type:"influenced",label:"influenced"}, // Locke → Voltaire
+  {a:17,b:18,type:"influenced",label:"influenced"}, // Hume → Kant
+  {a:15,b:18,type:"influenced",label:"influenced"}, // Newton → Kant
+  {a:18,b:397,type:"influenced",label:"influenced"},// Kant → Hegel
+  {a:397,b:19,type:"influenced",label:"influenced"},// Hegel → Marx
+  {a:398,b:20,type:"influenced",label:"influenced"},// Kierkegaard → Nietzsche
+  {a:399,b:20,type:"influenced",label:"influenced"},// Schopenhauer → Nietzsche
+  {a:397,b:398,type:"opposed",label:"opposed"},     // Hegel vs Kierkegaard
+  // Science
+  {a:21,b:15,type:"influenced",label:"influenced"}, // Galileo → Newton
+  // Chinese philosophy
+  {a:4,b:402,type:"influenced",label:"influenced"}, // Confucius → Mencius
+  {a:400,b:401,type:"influenced",label:"influenced"},// Laozi → Zhuangzi
+  {a:4,b:23,type:"contemporary",label:"contemporary"},// Confucius & Socrates (rough)
+  // Military
+  {a:301,b:302,type:"opposed",label:"opposed"},     // Hannibal vs Scipio
+  {a:302,b:301,type:"opposed",label:"opposed"},
+  {a:1,b:23,type:"contemporary",label:"contemporary"},// Socrates & Confucius
+  // Renaissance art
+  {a:17,b:355,type:"contemporary",label:"contemporary"},// Homer influence chain placeholder
+];
+
+let netNodes = [], netEdges = [], netDragging = null, netSelected = null;
+let netZoom = 1, netPanX = 0, netPanY = 0, netIsPanning = false;
+let netPanStartX = 0, netPanStartY = 0, netAnimFrame = null;
+let netHovered = null;
+
+function renderNetwork() {
+  const area = document.getElementById('network-area');
+  area.innerHTML = '';
+
+  const persons = filtered();
+  if (persons.length === 0) { area.innerHTML = '<div style="padding:40px;color:var(--dim);font-family:monospace;font-size:12px">No persons match current filters</div>'; return; }
+  if (persons.length > 150) { area.innerHTML = '<div style="padding:40px;color:var(--dim);font-family:monospace;font-size:12px">Too many persons for network view ('+persons.length+'). Apply filters to narrow down to <150.</div>'; return; }
+
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'width:100%;height:100%;display:block;cursor:grab;';
+  area.appendChild(canvas);
+
+  // Legend
+  const legend = document.createElement('div');
+  legend.style.cssText = 'position:absolute;bottom:12px;left:12px;background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:8px 12px;font-family:JetBrains Mono,monospace;font-size:10px;color:var(--muted);pointer-events:none;';
+  legend.innerHTML = Object.entries(EDGE_COLORS).map(([t,col])=>`<div style="display:flex;align-items:center;gap:6px;margin:2px 0"><div style="width:20px;height:2px;background:${col}"></div>${t}</div>`).join('');
+  area.appendChild(legend);
+
+  const W = area.clientWidth || 800;
+  const H = area.clientHeight || 600;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = W * dpr; canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const pSet = new Set(persons.map(p=>p.id));
+  netNodes = persons.map((p,i) => ({
+    ...p,
+    x: W/2 + Math.cos(i/persons.length*Math.PI*2) * Math.min(W,H)*0.35,
+    y: H/2 + Math.sin(i/persons.length*Math.PI*2) * Math.min(W,H)*0.3,
+    vx:0, vy:0, r:8, pinned:false
+  }));
+  netEdges = RELATIONS.filter(r => pSet.has(r.a) && pSet.has(r.b)).map(r => ({
+    ...r,
+    source: netNodes.find(n=>n.id===r.a),
+    target: netNodes.find(n=>n.id===r.b),
+  })).filter(e => e.source && e.target);
+
+  // Compute radii by degree
+  const deg = {};
+  netNodes.forEach(n => deg[n.id] = 6);
+  netEdges.forEach(e => { deg[e.source.id]=(deg[e.source.id]||6)+2; deg[e.target.id]=(deg[e.target.id]||6)+2; });
+  netNodes.forEach(n => n.r = Math.max(6, Math.min(18, deg[n.id])));
+
+  netZoom=1; netPanX=0; netPanY=0; netSelected=null; netHovered=null;
+
+  function simulate() {
+    netNodes.forEach(n => {
+      if (n.pinned || n===netDragging) return;
+      netNodes.forEach(m => {
+        if (m===n) return;
+        const dx=n.x-m.x, dy=n.y-m.y, d=Math.sqrt(dx*dx+dy*dy)||1;
+        const f=1600/(d*d);
+        n.vx+=dx/d*f; n.vy+=dy/d*f;
+      });
+      n.vx+=(W/2-n.x)*0.002; n.vy+=(H/2-n.y)*0.002;
+    });
+    netEdges.forEach(e => {
+      const dx=e.target.x-e.source.x, dy=e.target.y-e.source.y, d=Math.sqrt(dx*dx+dy*dy)||1;
+      const target=e.type==='contemporary'?160:70;
+      const f=(d-target)*0.025;
+      if (!e.source.pinned&&e.source!==netDragging){e.source.vx+=dx/d*f;e.source.vy+=dy/d*f;}
+      if (!e.target.pinned&&e.target!==netDragging){e.target.vx-=dx/d*f;e.target.vy-=dy/d*f;}
+    });
+    netNodes.forEach(n => {
+      if (n.pinned||n===netDragging) return;
+      n.vx*=0.75; n.vy*=0.75;
+      n.x+=n.vx; n.y+=n.vy;
+      n.x=Math.max(n.r+8,Math.min(W-n.r-8,n.x));
+      n.y=Math.max(n.r+8,Math.min(H-n.r-8,n.y));
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    ctx.save(); ctx.translate(netPanX,netPanY); ctx.scale(netZoom,netZoom);
+    const selConn = netSelected ? new Set(netEdges.filter(e=>e.source.id===netSelected.id||e.target.id===netSelected.id).flatMap(e=>[e.source.id,e.target.id])) : null;
+
+    // edges
+    netEdges.forEach(e => {
+      const isConn = !selConn || (selConn.has(e.source.id)&&selConn.has(e.target.id));
+      ctx.globalAlpha = isConn ? EDGE_ALPHA[e.type] : 0.04;
+      ctx.strokeStyle = EDGE_COLORS[e.type]; ctx.lineWidth = e.type==='taught'?2:1;
+      ctx.setLineDash(e.type==='contemporary'?[3,4]:[]);
+      ctx.beginPath(); ctx.moveTo(e.source.x,e.source.y);
+      const mx=(e.source.x+e.target.x)/2+(e.target.y-e.source.y)*0.15;
+      const my=(e.source.y+e.target.y)/2-(e.target.x-e.source.x)*0.15;
+      ctx.quadraticCurveTo(mx,my,e.target.x,e.target.y); ctx.stroke();
+      ctx.setLineDash([]);
+      if (e.type!=='contemporary') {
+        const dx=e.target.x-mx, dy=e.target.y-my, d=Math.sqrt(dx*dx+dy*dy)||1;
+        const ax=e.target.x-dx/d*(e.target.r+4), ay=e.target.y-dy/d*(e.target.r+4);
+        ctx.beginPath(); ctx.moveTo(ax,ay);
+        ctx.lineTo(ax-dy/d*4-dx/d*6, ay+dx/d*4-dy/d*6);
+        ctx.lineTo(ax+dy/d*4-dx/d*6, ay-dx/d*4-dy/d*6);
+        ctx.closePath(); ctx.fillStyle=EDGE_COLORS[e.type]; ctx.fill();
+      }
+      ctx.globalAlpha=1;
+    });
+
+    // nodes
+    netNodes.forEach(n => {
+      const isDim = selConn && !selConn.has(n.id);
+      const isSel = netSelected&&netSelected.id===n.id;
+      const isHov = netHovered&&netHovered.id===n.id;
+      ctx.globalAlpha = isDim?0.15:1;
+      const col = TX[n.fields[0]]?.color||'#7a7a8e';
+      if (isSel) { ctx.beginPath(); ctx.arc(n.x,n.y,n.r+4,0,Math.PI*2); ctx.strokeStyle=col; ctx.lineWidth=2; ctx.stroke(); }
+      ctx.beginPath(); ctx.arc(n.x,n.y,isHov?n.r+2:n.r,0,Math.PI*2);
+      ctx.fillStyle=col+(isDim?'33':'cc'); ctx.fill();
+      ctx.strokeStyle=col; ctx.lineWidth=1.5; ctx.stroke();
+      ctx.globalAlpha=isDim?0.15:1;
+      ctx.fillStyle='#e8e4d9';
+      ctx.font=`${isSel||isHov?'bold ':''} ${Math.max(9,n.r*0.7)}px Georgia`;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.name.split(' ')[0], n.x, n.y+n.r+10);
+      ctx.globalAlpha=1;
+    });
+    ctx.restore();
+  }
+
+  function cXY(e) {
+    const r=canvas.getBoundingClientRect();
+    return [(e.clientX-r.left-netPanX)/netZoom,(e.clientY-r.top-netPanY)/netZoom];
+  }
+  function nodeAt(x,y) { return netNodes.find(n=>Math.hypot(n.x-x,n.y-y)<n.r+4)||null; }
+
+  canvas.addEventListener('mousedown',e=>{
+    const [x,y]=cXY(e); const n=nodeAt(x,y);
+    if(n){netDragging=n;}
+    else{netIsPanning=true;netPanStartX=e.clientX-netPanX;netPanStartY=e.clientY-netPanY;}
+  });
+  canvas.addEventListener('mousemove',e=>{
+    const [x,y]=cXY(e);
+    if(netDragging){netDragging.x=x;netDragging.y=y;return;}
+    if(netIsPanning){netPanX=e.clientX-netPanStartX;netPanY=e.clientY-netPanStartY;return;}
+    netHovered=nodeAt(x,y);
+    canvas.style.cursor=netHovered?'pointer':'grab';
+  });
+  canvas.addEventListener('mouseup',e=>{
+    if(netDragging){
+      const [x,y]=cXY(e);
+      if(Math.hypot(netDragging.x-x,netDragging.y-y)<5){
+        netSelected=netSelected&&netSelected.id===netDragging.id?null:netDragging;
+      }
+      netDragging=null;
+    }
+    netIsPanning=false;
+  });
+  canvas.addEventListener('dblclick',e=>{const[x,y]=cXY(e);const n=nodeAt(x,y);if(n)n.pinned=!n.pinned;});
+  canvas.addEventListener('wheel',e=>{
+    e.preventDefault();
+    const f=e.deltaY<0?1.1:0.9;
+    const r=canvas.getBoundingClientRect();
+    const cx=e.clientX-r.left,cy=e.clientY-r.top;
+    netPanX=cx-(cx-netPanX)*f;netPanY=cy-(cy-netPanY)*f;
+    netZoom=Math.max(0.3,Math.min(4,netZoom*f));
+  },{passive:false});
+
+  if(netAnimFrame) cancelAnimationFrame(netAnimFrame);
+  function loop(){simulate();draw();netAnimFrame=requestAnimationFrame(loop);}
+  loop();
+}
+
+// ── TABLE VIEW ───────────────────────────────────────────────────
+let tableSortCol = 'birth', tableSortDir = 1;
+
+function renderTable() {
+  const area = document.getElementById('table-area');
+  const persons = filtered();
+  area.innerHTML = '';
+
+  // Toolbar
+  const toolbar = document.createElement('div');
+  toolbar.style.cssText = 'display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap;';
+  const countLbl = document.createElement('span');
+  countLbl.style.cssText = 'font-family:JetBrains Mono,monospace;font-size:11px;color:var(--dim);';
+  countLbl.textContent = `${persons.length} persons`;
+  toolbar.appendChild(countLbl);
+
+  // Export CSV
+  const csvBtn = document.createElement('button');
+  csvBtn.className = 'zoom-btn';
+  csvBtn.style.cssText = 'font-size:10px;padding:3px 10px;margin-left:auto;';
+  csvBtn.textContent = 'Export CSV';
+  csvBtn.onclick = () => exportCSV(persons);
+  toolbar.appendChild(csvBtn);
+
+  // Export XLS (as TSV that Excel opens)
+  const xlsBtn = document.createElement('button');
+  xlsBtn.className = 'zoom-btn';
+  xlsBtn.style.cssText = 'font-size:10px;padding:3px 10px;';
+  xlsBtn.textContent = 'Export XLS';
+  xlsBtn.onclick = () => exportXLS(persons);
+  toolbar.appendChild(xlsBtn);
+  area.appendChild(toolbar);
+
+  // Table
+  const tbl = document.createElement('table');
+  tbl.style.cssText = 'width:100%;border-collapse:collapse;font-size:12px;font-family:JetBrains Mono,monospace;';
+
+  const cols = [
+    {key:'name',   label:'Name'},
+    {key:'birth',  label:'Born'},
+    {key:'death',  label:'Died'},
+    {key:'fields', label:'Field'},
+    {key:'region', label:'Region'},
+    {key:'dynasty',label:'Dynasty'},
+    {key:'party',  label:'Party'},
+    {key:'roles',  label:'Role'},
+  ];
+
+  // Header
+  const thead = document.createElement('thead');
+  const hr = document.createElement('tr');
+  cols.forEach(col => {
+    const th = document.createElement('th');
+    th.style.cssText = `padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);color:var(--dim);cursor:pointer;white-space:nowrap;user-select:none;position:sticky;top:0;background:var(--bg);`;
+    const isSort = tableSortCol === col.key;
+    th.innerHTML = `${col.label} ${isSort ? (tableSortDir===1?'↑':'↓') : ''}`;
+    th.onclick = () => {
+      if (tableSortCol===col.key) tableSortDir*=-1;
+      else { tableSortCol=col.key; tableSortDir=1; }
+      renderTable();
+    };
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+  tbl.appendChild(thead);
+
+  // Sort
+  const sorted = [...persons].sort((a,b) => {
+    let av = a[tableSortCol], bv = b[tableSortCol];
+    if (Array.isArray(av)) av = av[0]||'';
+    if (Array.isArray(bv)) bv = bv[0]||'';
+    if (typeof av==='number'&&typeof bv==='number') return (av-bv)*tableSortDir;
+    return String(av||'').localeCompare(String(bv||''))*tableSortDir;
+  });
+
+  // Body
+  const tbody = document.createElement('tbody');
+  sorted.forEach((p,i) => {
+    const tr = document.createElement('tr');
+    tr.style.cssText = `background:${i%2===0?'transparent':'rgba(255,255,255,.02)'};cursor:pointer;`;
+    tr.onmouseenter = ()=>tr.style.background='rgba(201,169,110,.08)';
+    tr.onmouseleave = ()=>tr.style.background=i%2===0?'transparent':'rgba(255,255,255,.02)';
+    tr.onclick = () => { switchTab('timeline'); setTimeout(()=>{ S.nameSearch=p.name; document.getElementById('name-search').value=p.name; refresh(); },100); };
+
+    const fieldCol = TX[p.fields[0]]?.color||'#7a7a8e';
+    const cells = [
+      `<span style="color:${fieldCol};font-family:Georgia,serif">${p.name}</span>`,
+      `<span style="color:var(--muted)">${p.birth<0?Math.abs(p.birth)+' BC':p.birth}</span>`,
+      `<span style="color:var(--muted)">${p.death>=CURRENT_YEAR?'present':p.death<0?Math.abs(p.death)+' BC':p.death}</span>`,
+      `<span style="color:${fieldCol}">${p.fields[0]||''}</span>`,
+      p.region||'',
+      p.dynasty||'',
+      p.party ? `<span style="color:${PARTY_COLORS[p.party]||'#7a7a8e'}">${p.party}</span>` : '',
+      (p.roles||[]).join(', '),
+    ];
+    cells.forEach(html => {
+      const td = document.createElement('td');
+      td.style.cssText = 'padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.04);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis;';
+      td.innerHTML = html;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  area.appendChild(tbl);
+}
+
+function exportCSV(persons) {
+  const cols = ['Name','Born','Died','Fields','Region','Dynasty','Party','Roles','Bio'];
+  const rows = persons.map(p => [
+    p.name,
+    p.birth<0?-p.birth+' BC':p.birth,
+    p.death>=CURRENT_YEAR?'present':p.death<0?-p.death+' BC':p.death,
+    (p.fields||[]).join('; '),
+    p.region||'',
+    p.dynasty||'',
+    p.party||'',
+    (p.roles||[]).join('; '),
+    (p.bio||'').replace(/"/g,"''"),
+  ]);
+  const csv = [cols,...rows].map(r=>r.map(v=>`"${v}"`).join(',')).join('\n');
+  download('tessera-temporum.csv', 'text/csv', csv);
+}
+
+function exportXLS(persons) {
+  const cols = ['Name','Born','Died','Fields','Region','Dynasty','Party','Roles'];
+  const rows = persons.map(p => [
+    p.name,
+    p.birth<0?-p.birth+' BC':p.birth,
+    p.death>=CURRENT_YEAR?'present':p.death<0?-p.death+' BC':p.death,
+    (p.fields||[]).join('; '),
+    p.region||'',
+    p.dynasty||'',
+    p.party||'',
+    (p.roles||[]).join('; '),
+  ]);
+  const tsv = [cols,...rows].map(r=>r.join('\t')).join('\n');
+  download('tessera-temporum.xls', 'application/vnd.ms-excel', tsv);
+}
+
+function download(filename, mime, content) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download = filename;
+  a.click();
+}
+
+
+function refresh() { buildTree(); if(S.activeTab==="timeline") render(); else if(S.activeTab==="network") renderNetwork(); else if(S.activeTab==="table") renderTable(); }
 
 document.getElementById('search-name').addEventListener('input', e => { S.nameSearch=e.target.value; render(); });
 document.getElementById('year-from').addEventListener('input',  e => { S.yearFrom=e.target.value?parseInt(e.target.value):null; render(); });
